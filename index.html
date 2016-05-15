@@ -1,0 +1,235 @@
+<!--
+  Lovingly handcrafted by @hrbrmstr
+  Copyright (c) 2016, Bob Rudis
+  MIT License
+ -->
+<!DOCTYPE HTML>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:og="http://ogp.me/ns#"
+      xmlns:fb="http://www.facebook.com/2008/fbml">
+<meta charset="utf-8">
+
+<title>HadCRUT4 D3 Visualization</title>
+<meta property="og:title" content="HadCRUT4 D3 Visualization" />
+<meta property="og:type" content="blog" />
+<meta property="og:url" content="http://rud.is/b/projects/hadcrut4/index.html" />
+<meta property="og:site_name" content="rud.is" />
+<meta property="og:description" content="Alternative view to the animated 'death spiral'. This one shows both the mean and the 95% CI from fields 11 & 12 in the original annual data set." />
+<meta name="twitter:card" content="Alternative view to the animated 'death spiral'. This one shows both the mean and the 95% CI from fields 11 & 12 in the original annual data set.">
+<meta name="twitter:url" content="http://rud.is/b/projects/hadcrut4/index.html">
+<meta name="twitter:title" content="HadCRUT4 D3 Visualization">
+<meta name="twitter:description" content="Alternative view to the animated 'death spiral'. This one shows both the mean and the 95% CI from fields 11 & 12 in the original annual data set.">
+<meta name="twitter:site" content="@hrbrmstr">
+<meta name="twitter:creator" content="@hrbrmstr">
+<meta name="twitter:image" content="https://rud.is/b/wp-content/uploads/2016/05/hadcrut.png">
+<meta property="og:image" content="https://rud.is/b/wp-content/uploads/2016/05/hadcrut.png" />
+<link href='https://fonts.googleapis.com/css?family=PT+Sans:400,700'
+      rel='stylesheet'
+      type='text/css'
+      charset="utf-8"/>
+<style>
+body, html, div, span, p, h2 {
+  font-family: 'PT Sans', sans-serif;
+}
+
+h2 {
+  font-weight:700;
+}
+#chart {
+  width: 960px;
+  height: 550px;
+  background: black;
+}
+
+.ranges {}
+.medians {}
+
+.x_axis text {
+  font-family: 'PT Sans', sans-serif;
+  font-size: 10pt;
+  fill: #ffffff;
+}
+
+.x_axis path, .y_axis path { display: none; }
+
+.y_axis text{
+  font-family: 'PT Sans', sans-serif;
+  font-size: 10pt;
+  fill: #b2182b;
+}
+
+.y_axis line {
+  stroke-width: 1.0;
+  stroke: #b2182b;
+}
+
+.x_axis line {
+  stroke-width: 0.5;
+  stroke: #2b2b2b;
+}
+
+.vis_button {
+	-moz-box-shadow:inset 0px 1px 0px 0px #cf866c;
+	-webkit-box-shadow:inset 0px 1px 0px 0px #cf866c;
+	box-shadow:inset 0px 1px 0px 0px #cf866c;
+	background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #d0451b), color-stop(1, #bc3315));
+	background:-moz-linear-gradient(top, #d0451b 5%, #bc3315 100%);
+	background:-webkit-linear-gradient(top, #d0451b 5%, #bc3315 100%);
+	background:-o-linear-gradient(top, #d0451b 5%, #bc3315 100%);
+	background:-ms-linear-gradient(top, #d0451b 5%, #bc3315 100%);
+	background:linear-gradient(to bottom, #d0451b 5%, #bc3315 100%);
+	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#d0451b', endColorstr='#bc3315',GradientType=0);
+	background-color:#d0451b;
+	-moz-border-radius:3px;
+	-webkit-border-radius:3px;
+	border-radius:3px;
+	border:1px solid #942911;
+	display:inline-block;
+	cursor:pointer;
+	color:#ffffff;
+	font-family:Arial;
+	font-size:13px;
+	padding:6px 28px;
+	text-decoration:none;
+	text-shadow:0px 1px 0px #854629;
+}
+.vis_button:hover {
+	background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #bc3315), color-stop(1, #d0451b));
+	background:-moz-linear-gradient(top, #bc3315 5%, #d0451b 100%);
+	background:-webkit-linear-gradient(top, #bc3315 5%, #d0451b 100%);
+	background:-o-linear-gradient(top, #bc3315 5%, #d0451b 100%);
+	background:-ms-linear-gradient(top, #bc3315 5%, #d0451b 100%);
+	background:linear-gradient(to bottom, #bc3315 5%, #d0451b 100%);
+	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#bc3315', endColorstr='#d0451b',GradientType=0);
+	background-color:#bc3315;
+}
+.vis_button:active {
+	position:relative;
+	top:1px;
+}
+</style>
+<script src="https://d3js.org/d3.v4.0.0-alpha.40.min.js"></script>
+</head>
+<body>
+<div style="width:960px">
+<a href="#" class="vis_button" onclick="javascript:start_vis()">Click to view/reset</a>
+<h2 style="margin-bottom:0px">Global Temperature Change (1850-2016)</h2>
+<p style="font-size:9pt">Using lower and upper bounds of the 95% confidence interval of the combined effects of all the uncertainties described in the HadCRUT4 error model (measurement and sampling, bias and coverage uncertainties; fields 11 & 12)</p>
+</div>
+<div id="chart"></div>
+<div style="font-size:8pt; width:960px;">
+<div style="float:left; display:inline-block; font-style:italic">Median in white</div>
+<div style="float:right; display:inline-block">HadCRUT4 (<a   href="http://www.metoffice.gov.uk/hadobs/hadcrut4/index.html">http://www.metoffice.gov.uk/hadobs/hadcrut4/index.html</a>)</div>
+</div>
+<script>
+
+start_vis = function() {
+var as_date = d3.timeParse("%Y-%m-%d");
+
+fmt_C = function(d) { return(d + "°C"); }
+
+process_row = function(d) {
+  return {
+    year_mon: as_date(d.year_mon),
+    median: +d.median,
+    lower: +d.lower,
+    upper: +d.upper,
+    year : +d.year,
+    decade: +d.decade
+  };
+}
+
+make_chart = function(data) {
+
+  d3.selectAll("svg").remove();
+
+  var margin = { top: 15, right: 0, bottom: 30, left: 50 };
+  var width = 960 - margin.left - margin.right;
+  var height = 550 - margin.top - margin.bottom;
+
+  var scale_x_date = d3.scaleTime()
+                       .domain([new Date(1850, 1, 1, 0), new Date(2015, 12, 1, 0)])
+                       .range([0, width]);
+  var scale_y_continuous = d3.scaleLinear()
+                             .domain([-1.6, 2.25])
+                             .range([height, 0]);
+
+  var x_axis = d3.axisTop(scale_x_date)
+                 .tickSize(-height);
+  var y_axis = d3.axisLeft(scale_y_continuous)
+                 .tickValues([0, 1.5, 2])
+                 .tickSize(-width)
+                 .tickFormat(fmt_C);
+
+  var scale_color_viridis = d3.scalePlasma().domain([1850, 2015])
+
+  var chart = d3.select("#chart")
+                .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+  var t = d3.transition().duration(2000).delay(1000).ease(d3.easeLinear);
+
+  chart.append("g")
+       .attr("class", "x_axis")
+       .attr("transform", "translate(0," + margin.top + ")")
+       .call(x_axis);
+
+  chart.append("g")
+       .attr("class", "y_axis")
+       .call(y_axis);
+
+  chart.selectAll(".ranges")
+       .data(data)
+       .enter()
+       .append("line")
+       .classed("ranges", true)
+       .attr("x1", function(d) { return(scale_x_date(d.year_mon)); })
+       .attr("x2", function(d) { return(scale_x_date(d.year_mon)); })
+       .attr("y1", function(d) { return(scale_y_continuous(0)); })
+       .attr("y2", function(d) { return(scale_y_continuous(0)); })
+       .attr("stroke-width", 0.6)
+       .attr("stroke", function(d) { return(scale_color_viridis(d.year)); })
+       .transition(t)
+       .attr("y1", function(d) { return(scale_y_continuous(d.lower +
+                                          ((d.upper-d.lower)/2) + 0.01)); })
+       .attr("y2", function(d) { return(scale_y_continuous(d.lower +
+                                          ((d.upper-d.lower)/2) - 0.01)); })
+       .transition(t)
+       .attr("x1", function(d) { return(scale_x_date(d.year_mon)); })
+       .attr("x2", function(d) { return(scale_x_date(d.year_mon)); })
+       .attr("y1", function(d) { return(scale_y_continuous(d.lower)); })
+       .attr("y2", function(d) { return(scale_y_continuous(d.upper)); })
+       .attr("stroke-width", 0.6)
+       .attr("stroke", function(d) { return(scale_color_viridis(d.year)); });
+
+
+  d3.timeout(function () {
+
+    d3.timeout(function () {
+
+    chart.selectAll(".medians")
+         .data(data)
+         .enter()
+         .append("circle")
+         .attr("cx", function(d) { return(scale_x_date(d.year_mon)); })
+         .attr("cy", function(d) { return(scale_y_continuous(d.median)); })
+         .attr("r", 0.6)
+         .style("fill", "white")
+
+    }, 1500);
+
+  }, 1500);
+
+}
+
+d3.csv("data/temps.csv")
+  .row(process_row)
+  .get(make_chart)
+
+}
+</script>
+</body>
+</html>
