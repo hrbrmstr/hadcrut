@@ -118,7 +118,7 @@ $(document).ready(function () {
 
 <h1 class="title toc-ignore">global_temp.r</h1>
 <h4 class="author"><em>bob</em></h4>
-<h4 class="date"><em>Mon Dec 5 14:41:18 2016</em></h4>
+<h4 class="date"><em>Mon Dec 5 14:59:17 2016</em></h4>
 
 </div>
 
@@ -128,9 +128,9 @@ library(dplyr)
 library(zoo)      # as.yearmon()
 library(ggplot2)  # devtools::install_github(&quot;hadley/ggplot2&quot;)
 library(hrbrmisc) # devtools::install_github(&quot;hrbrmstr/hrbrmisc&quot;)
-library(viridis)
-
-URL &lt;- &quot;http://www.metoffice.gov.uk/hadobs/hadcrut4/data/current/time_series/HadCRUT.4.5.0.0.monthly_ns_avg.txt&quot;
+library(viridis)</code></pre>
+<p>TODO: Monitor <a href="http://www.metoffice.gov.uk/hadobs/hadcrut4/data/current/download.html" class="uri">http://www.metoffice.gov.uk/hadobs/hadcrut4/data/current/download.html</a> for changes</p>
+<pre class="r"><code>URL &lt;- &quot;http://www.metoffice.gov.uk/hadobs/hadcrut4/data/current/time_series/HadCRUT.4.5.0.0.monthly_ns_avg.txt&quot;
 fil &lt;- sprintf(&quot;data/%s&quot;, basename(URL))
 if (!file.exists(fil)) download.file(URL, fil)
 

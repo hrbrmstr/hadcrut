@@ -6,6 +6,8 @@ library(ggplot2)  # devtools::install_github("hadley/ggplot2")
 library(hrbrmisc) # devtools::install_github("hrbrmstr/hrbrmisc")
 library(viridis)
 
+#' TODO: Monitor <http://www.metoffice.gov.uk/hadobs/hadcrut4/data/current/download.html> for changes
+
 URL <- "http://www.metoffice.gov.uk/hadobs/hadcrut4/data/current/time_series/HadCRUT.4.5.0.0.monthly_ns_avg.txt"
 fil <- sprintf("data/%s", basename(URL))
 if (!file.exists(fil)) download.file(URL, fil)
@@ -47,4 +49,3 @@ gg <- gg + theme(axis.text.y=element_text(size=12, color="#b2182b"))
 gg <- gg + theme(plot.margin=margin(10, 10, 10, 10))
 gg <- gg + theme(legend.position="none")
 gg
-
